@@ -22,5 +22,5 @@ jobs:
       uses: docker/build-push-action@v6.7.0
       with:
         context: .
-        tags: 'latest'
+        tags: 'dco1993/fiap-rm356750:latest'
         push: true

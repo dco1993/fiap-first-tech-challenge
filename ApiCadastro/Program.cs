@@ -10,6 +10,8 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders().AddConsole();
+
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json").Build();
 
@@ -40,6 +42,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+Console.WriteLine("Teste de automatizacao GitHub Actions + Docker Hub");
 
 //Configuração dos grupos de endpoints
 var regiaoGroup = app.MapGroup("/Regiao");
@@ -218,4 +222,6 @@ contatoGroup.MapDelete("/excluirContato", (IContatoRepository contato, int id) =
 #endregion
 
 app.Run();
+
+
 

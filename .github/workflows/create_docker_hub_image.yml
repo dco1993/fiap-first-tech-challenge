@@ -1,4 +1,4 @@
-name: Testar e criar imagem no Docker Hub
+name: Teste criar imagem no Docker Hub
 
 on:
   push:

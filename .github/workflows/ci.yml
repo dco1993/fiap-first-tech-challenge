@@ -44,7 +44,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: artifact-${{ $GITHUB_OUTPUT.dataHora }}
+        name: artifact-${{ GITHUB_OUTPUT.dataHora }}
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:

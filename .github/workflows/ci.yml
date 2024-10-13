@@ -1,4 +1,4 @@
-name: .NET
+name: pipeline_ci
 
 on:
   push:

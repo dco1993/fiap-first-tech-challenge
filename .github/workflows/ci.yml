@@ -31,7 +31,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: my-artifact
+        name: my-artifact-$NOW
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:

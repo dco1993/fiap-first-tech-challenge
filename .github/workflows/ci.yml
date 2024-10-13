@@ -30,13 +30,6 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Obter data e hora
-      id: data-hora-antigo
-      run: |
-        $currentDateTime = Get-Date -Format "yyyy-MM-dd-HH-mm"
-        Write-Output "::set-output name=dataHora::$currentDateTime"
-      shell: pwsh
-
-    - name: Obter data e hora
       id: data-hora
       run: |
         $currentDateTime = Get-Date -Format "yyyy-MM-dd-HH-mm"
@@ -46,7 +39,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: artifact-${{ steps.data-hora.outputs.dataHora }}
-        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
+        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\net8.0\
 
   build-push-docker-image:
     needs: build-test
@@ -67,5 +60,5 @@ jobs:
       uses: docker/build-push-action@v6.7.0
       with:
         context: .
-        tags: 'dco1993/fiap-rm356750:latest'
+        tags: 'dco1993/fiap-rm356750:develop'
         push: true

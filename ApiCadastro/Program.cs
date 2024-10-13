@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Http.Json;
 using System.Text.Json.Serialization;
+using Prometheus;
+using Prometheus.SystemMetrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +17,8 @@ builder.Logging.ClearProviders().AddConsole();
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json").Build();
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -29,37 +30,69 @@ builder.Services.AddScoped<IContatoRepository, ContatoRepository>();
 builder.Services.AddScoped<IRegiaoRepository, RegiaoRepository>();
 
 //Configuração para ignorar os ciclos infinitos durante a serialização de objetos
-builder.Services.Configure<JsonOptions>(options => 
+builder.Services.Configure<JsonOptions>(options =>
             options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+//Configurar endpoint de métricas
+builder.Services.AddMetricServer(options =>
+{
+    options.Port = 2051;
+});
+
+//Obter métricas do sistema
+builder.Services.AddSystemMetrics();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    //app.UseExceptionHandler("/Error");
 }
 
-app.UseHttpsRedirection();
-
-Console.WriteLine("Teste de automatizacao GitHub Actions + Docker Hub");
+//Obter métricas das solicitações HTTP
+app.UseHttpMetrics();
 
 //Configuração dos grupos de endpoints
 var regiaoGroup = app.MapGroup("/Regiao");
 var contatoGroup = app.MapGroup("/Contato");
 
+#region Configuração Métricas
+
+Metrics.SuppressDefaultMetrics(new SuppressDefaultMetricOptions
+{
+    SuppressEventCounters = true
+});
+
+//Regiões
+Gauge obterRegioesDuracao = Metrics.CreateGauge("duration_obter_regioes", "Duração em milisegundos da chamada para obter regiões.");
+
+//Contatos
+Gauge obterContatosDuracao = Metrics.CreateGauge("duration_obter_contatos", "Duração em milisegundos da chamada para obter contatos.");
+Gauge obterContatosIdDuracao = Metrics.CreateGauge("duration_obter_contatos_id", "Duração em milisegundos da chamada para obter contatos por ID.");
+Gauge obterContatosDddDuracao = Metrics.CreateGauge("duration_obter_contatos_ddd", "Duração em milisegundos da chamada para obter contatos por ID por DDD.");
+Gauge cadastrarContatoDuracao = Metrics.CreateGauge("duration_cadastrar_contato", "Duração em milisegundos da chamada para cadastrar um contato.");
+Gauge atualizarContatoDuracao = Metrics.CreateGauge("duration_atualizar_contato", "Duração em milisegundos da chamada para atualizar um contato.");
+Gauge excluirContatoDuracao = Metrics.CreateGauge("duration_excluir_contato", "Duração em milisegundos da chamada para excluir um contato.");
+
+#endregion
+
 #region Endpoints Regiões
 
-regiaoGroup.MapGet("/obterRegioes", (IRegiaoRepository regiao) => 
+regiaoGroup.MapGet("/obterRegioes", (IRegiaoRepository regiao) =>
 {
-    try
+    using (obterRegioesDuracao.NewTimer())
     {
-        return Results.Ok(regiao.ObterTodos());
-    }
-    catch(Exception e) 
-    {
-        return Results.BadRequest(e.Message);
+        try
+        {
+            return Results.Ok(regiao.ObterTodos());
+        }
+        catch (Exception e)
+        {
+            return Results.BadRequest(e.Message);
+        }
     }
 })
  .WithName("ObterRegioes")
@@ -72,13 +105,16 @@ regiaoGroup.MapGet("/obterRegioes", (IRegiaoRepository regiao) =>
 
 contatoGroup.MapGet("/obterTodosContatos", (IContatoRepository contato) =>
 {
-    try
+    using (obterContatosDuracao.NewTimer())
     {
-        return Results.Ok(contato.ObterTodos());
-    }
-    catch (Exception e) 
-    {
-        return Results.BadRequest(e.Message);
+        try
+        {
+            return Results.Ok(contato.ObterTodos());
+        }
+        catch (Exception e)
+        {
+            return Results.BadRequest(e.Message);
+        }
     }
 })
  .WithName("ObterTodosContatos")
@@ -87,23 +123,25 @@ contatoGroup.MapGet("/obterTodosContatos", (IContatoRepository contato) =>
 
 contatoGroup.MapGet("/obterContatoPorId", (IContatoRepository contatoRepo, int id) =>
 {
-    try
+    using (obterContatosIdDuracao.NewTimer())
     {
-        var contato = contatoRepo.ObterPorId(id);
-        if (contato is not null)
+        try
         {
-            return Results.Ok(contato);
+            var contato = contatoRepo.ObterPorId(id);
+            if (contato is not null)
+            {
+                return Results.Ok(contato);
+            }
+            else
+            {
+                return Results.BadRequest("Nenhum contato com esse ID foi encontrado.");
+            }
         }
-        else
+        catch (Exception e)
         {
-            return Results.BadRequest("Nenhum contato com esse ID foi encontrado.");
+            return Results.BadRequest(e.Message);
         }
     }
-    catch(Exception e)
-    {
-        return Results.BadRequest(e.Message);
-    }
-    
 })
  .WithName("ObterContatoPorId")
  .WithTags("Contato")
@@ -111,109 +149,124 @@ contatoGroup.MapGet("/obterContatoPorId", (IContatoRepository contatoRepo, int i
 
 contatoGroup.MapGet("/obterContatosPorDdd", (IContatoRepository contatoRepo, int ddd) =>
 {
-    try
+    using (obterContatosDddDuracao.NewTimer())
     {
-        return Results.Ok(contatoRepo.ObterContatosPorDdd(ddd));
+        try
+        {
+            if (ddd == 0) return Results.BadRequest("O campo DDD precisa ser preenchido.");
+
+            IList<Contato> lstContato = contatoRepo.ObterContatosPorDdd(ddd);
+
+            if (lstContato.Count == 0) return Results.BadRequest("Sua pesquisa não retornou resultados.");
+
+            return Results.Ok(lstContato);
+        }
+        catch (Exception e)
+        {
+            return Results.BadRequest(e.Message);
+        }
     }
-    catch (Exception e)
-    {
-        return Results.BadRequest(e.Message);
-    }
-    
 })
  .WithName("ObterContatosPorDdd")
  .WithTags("Contato")
  .WithOpenApi();
 
-contatoGroup.MapPost("/cadastrarContato", (IContatoRepository contatoRepo, ContatoInput novoContato) => {
-
-    var contato = new Contato
+contatoGroup.MapPost("/cadastrarContato", (IContatoRepository contatoRepo, ContatoInput novoContato) =>
+{
+    using (cadastrarContatoDuracao.NewTimer())
     {
-        NomeCompleto = novoContato.NomeCompleto,
-        TelefoneDdd = novoContato.TelefoneDdd,
-        TelefoneNum = novoContato.TelefoneNum,
-        Email = novoContato.Email
-    };
+        var contato = new Contato
+        {
+            NomeCompleto = novoContato.NomeCompleto,
+            TelefoneDdd = novoContato.TelefoneDdd,
+            TelefoneNum = novoContato.TelefoneNum,
+            Email = novoContato.Email
+        };
 
-    var validacao = Validacoes.ValidaContato(contato);
+        var validacao = Validacoes.ValidaContato(contato);
 
-    if (validacao.IsNullOrEmpty())
-    {
-        try
+        if (validacao.IsNullOrEmpty())
         {
-            contatoRepo.Cadastrar(contato);
-            return Results.Ok("Contato cadastrado com sucesso.");
+            try
+            {
+                contatoRepo.Cadastrar(contato);
+                return Results.Ok("Contato cadastrado com sucesso.");
+            }
+            catch (DbUpdateException e)
+            {
+                return Results.BadRequest("O código DDD informado é inválido.");
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(e.Message);
+            }
         }
-        catch (DbUpdateException e)
+        else
         {
-            return Results.BadRequest("O código DDD informado é inválido.");
-        }
-        catch (Exception e)
-        {
-            return Results.BadRequest(e.Message);
+            return Results.BadRequest(validacao);
         }
     }
-    else
-    {
-        return Results.BadRequest(validacao);
-    }
-
 })
  .WithName("CadastrarContato")
  .WithTags("Contato")
  .WithOpenApi();
 
-contatoGroup.MapPut("/atualizarContato", (IContatoRepository contatoRepo, ContatoUpdate contatoAtualizado) => {
-
-    var contato = new Contato
+contatoGroup.MapPut("/atualizarContato", (IContatoRepository contatoRepo, ContatoUpdate contatoAtualizado) =>
+{
+    using (atualizarContatoDuracao.NewTimer())
     {
-        Id = contatoAtualizado.Id,
-        NomeCompleto = contatoAtualizado.NomeCompleto,
-        TelefoneDdd = contatoAtualizado.TelefoneDdd,
-        TelefoneNum = contatoAtualizado.TelefoneNum,
-        Email = contatoAtualizado.Email
-    };
+        var contato = new Contato
+        {
+            Id = contatoAtualizado.Id,
+            NomeCompleto = contatoAtualizado.NomeCompleto,
+            TelefoneDdd = contatoAtualizado.TelefoneDdd,
+            TelefoneNum = contatoAtualizado.TelefoneNum,
+            Email = contatoAtualizado.Email
+        };
 
-    var validacao = Validacoes.ValidaContato(contato);
+        var validacao = Validacoes.ValidaContato(contato);
 
-    if (validacao.IsNullOrEmpty())
+        if (validacao.IsNullOrEmpty())
+        {
+            try
+            {
+                contatoRepo.Atualizar(contato);
+                return Results.Ok("Contato atualizado com sucesso.");
+            }
+            catch (DbUpdateException e)
+            {
+                return Results.BadRequest("O código DDD informado é inválido.");
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(e.Message);
+            }
+        }
+        else
+        {
+            return Results.BadRequest(validacao);
+        }
+    }
+})
+ .WithName("AtualizarContato")
+ .WithTags("Contato")
+ .WithOpenApi();
+
+contatoGroup.MapDelete("/excluirContato", (IContatoRepository contato, int id) =>
+{
+    using (excluirContatoDuracao.NewTimer())
     {
         try
         {
-            contatoRepo.Atualizar(contato);
-            return Results.Ok("Contato atualizado com sucesso.");
-        }
-        catch (DbUpdateException e)
-        {
-            return Results.BadRequest("O código DDD informado é inválido.");
+            if (id == 0) return Results.BadRequest("O campo ID precisa ser preenchido.");
+            contato.Excluir(id);
+            return Results.Ok("Contato excluido com sucesso.");
         }
         catch (Exception e)
         {
             return Results.BadRequest(e.Message);
         }
     }
-    else
-    {
-        return Results.BadRequest(validacao);
-    }
-
-})
- .WithName("AtualizarContato")
- .WithTags("Contato")
- .WithOpenApi();
-
-contatoGroup.MapDelete("/excluirContato", (IContatoRepository contato, int id) => {
-
-    try
-    {
-        contato.Excluir(id);
-        return Results.Ok("Contato excluido com sucesso.");
-    }
-    catch (Exception e)
-    {
-        return Results.BadRequest(e.Message);
-    }
-
 })
  .WithName("ExcluirContato")
  .WithTags("Contato")
@@ -222,6 +275,3 @@ contatoGroup.MapDelete("/excluirContato", (IContatoRepository contato, int id) =
 #endregion
 
 app.Run();
-
-
-

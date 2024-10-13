@@ -27,7 +27,7 @@ jobs:
       run: dotnet publish --configuration Release
 
     - name: Executando testes unitários
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --verbosity normal
 
     - name: Obter data e hora
       id: data-hora

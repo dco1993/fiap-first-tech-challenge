@@ -23,8 +23,11 @@ jobs:
     - name: Restaurar dependências
       run: dotnet restore
 
+    - name: Build da aplicação
+      run: dotnet build --no-restore
+
     - name: Executando testes unitários
-      run: dotnet test --verbosity normal
+      run: dotnet test --no-build --verbosity normal
 
     - name: Publish da aplicação
       run: dotnet publish D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\ApiCadastro\ApiCadastro.csproj --configuration Release /p:EnvironmentName=Staging 

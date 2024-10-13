@@ -30,7 +30,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Criar variável com data/hora atual para usar no nome do artefato
-      run: echo "DATA_HORA=$(date '+%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      run: echo "DATA_HORA=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
 
     - name: Verificar variável de data e hora
       run: echo "DATA_HORA=${{ env.DATA_HORA }}"

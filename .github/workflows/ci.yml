@@ -23,11 +23,11 @@ jobs:
     - name: Restaurar dependências
       run: dotnet restore
 
-    - name: Publish da aplicação
-      run: dotnet publish --configuration Release
-
     - name: Executando testes unitários
       run: dotnet test --verbosity normal
+
+    - name: Publish da aplicação
+      run: dotnet publish --configuration Release /p:EnvironmentName=Staging
 
     - name: Obter data e hora
       id: data-hora

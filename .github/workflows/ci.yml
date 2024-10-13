@@ -39,7 +39,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: artifact-${{ steps.data-hora.outputs.dataHora }}
-        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\net8.0\publish
+        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Release\net8.0\publish
 
   build-push-docker-image:
     needs: build-test

@@ -30,11 +30,11 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
     - name: Criar variável com data/hora atual para usar no nome do artefato
-      run: echo "NOW=$(date +'%Y-%m-%dT%H:%M:%S')"
+      run: echo "MY_DATE=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
 
     - uses: actions/upload-artifact@v4
       with:
-        name: my-artifact-{{$NOW}}
+        name: my-artifact-${{ env.MY_DATE }}
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:

@@ -23,8 +23,8 @@ jobs:
     - name: Restaurar dependências
       run: dotnet restore
 
-    - name: Build da aplicação
-      run: dotnet build --no-restore
+    - name: Publish da aplicação
+      run: dotnet publish --configuration Release
 
     - name: Executando testes unitários
       run: dotnet test --no-build --verbosity normal
@@ -39,7 +39,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: artifact-${{ steps.data-hora.outputs.dataHora }}
-        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\net8.0\
+        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\net8.0\publish
 
   build-push-docker-image:
     needs: build-test

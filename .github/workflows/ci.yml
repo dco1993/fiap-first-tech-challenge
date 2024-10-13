@@ -32,9 +32,12 @@ jobs:
     - name: Criar variável com data/hora atual para usar no nome do artefato
       run: echo "DATA_HORA=$(date '+%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
 
+    - name: Verificar variável de data e hora
+      run: echo "DATA_HORA=${{ env.DATA_HORA }}"
+
     - uses: actions/upload-artifact@v4
       with:
-        name: artifact-${{ env.DATA_HORA }}-${{ env.date }}
+        name: artifact
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:

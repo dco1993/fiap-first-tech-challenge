@@ -29,21 +29,24 @@ jobs:
     - name: Executando testes unitários
       run: dotnet test --no-build --verbosity normal
 
+    - name: Criar variável com data/hora atual para usar no nome do artefato
+      run: echo "NOW=$(date +'%Y-%m-%dT%H:%M:%S')"
+
     - uses: actions/upload-artifact@v4
       with:
-        name: my-artifact-$NOW
+        name: my-artifact-{{$NOW}}
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:
     needs: build-test
-    name: Fazer login no Docker Hub
+    name: Push de imagem no Docker Hub
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout da branch
       uses: actions/checkout@v4
 
-    - name: Login Docker
+    - name: Login Docker Hub
       uses: docker/login-action@v3.3.0
       with:
         username: 'dco1993'

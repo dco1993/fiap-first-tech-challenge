@@ -29,15 +29,16 @@ jobs:
     - name: Executando testes unitários
       run: dotnet test --no-build --verbosity normal
 
-    - name: Verificar a data e a hora
+    - name: Obter data e hora
+      id: data-hora
       run: |
-        $currentDateTime = Get-Date
-        Write-Output "A data e a hora atuais são: $currentDateTime"
+        $currentDateTime = Get-Date -Format "yyyy-MM-dd-HH-mm"
+        Write-Output "::set-output name=dataHora::$currentDateTime"
       shell: pwsh
 
     - uses: actions/upload-artifact@v4
       with:
-        name: artifact
+        name: artifact-${{ steps.data-hora.outputs.dataHora }}
         path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\TestsApiCadastro\bin\Debug\
 
   build-push-docker-image:

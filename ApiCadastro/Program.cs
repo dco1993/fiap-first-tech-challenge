@@ -275,3 +275,5 @@ contatoGroup.MapDelete("/excluirContato", (IContatoRepository contato, int id) =
 #endregion
 
 app.Run();
+
+public partial class Program { }

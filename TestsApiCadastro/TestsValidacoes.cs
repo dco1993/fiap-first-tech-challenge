@@ -1,6 +1,9 @@
 ﻿using ApiCadastro;
 using Bogus;
 using Domain.Entity;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace TestsApiCadastro
 {

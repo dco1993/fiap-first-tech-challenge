@@ -93,8 +93,8 @@ namespace TestsApiCadastro
             var novoContato = new Contato
             {
                 Id = 21,
-                NomeCompleto = string.Join("_", "TI_Daniel Cintra_", dt.Year, dt.Month+1, dt.Day, dt.Hour, dt.Minute, dt.Second),
-                Email = _faker.Person.Email,
+                NomeCompleto = string.Join("_", "TI_Daniel Cintra_", dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second),
+                Email = "daniel@cintra.com.br",
                 TelefoneDdd = 21,
                 TelefoneNum = _faker.Random.Int(10000000, 999999999).ToString(),
             };

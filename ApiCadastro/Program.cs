@@ -34,9 +34,10 @@ builder.Services.Configure<JsonOptions>(options =>
             options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 //Configurar endpoint de métricas
+var port = builder.Environment.IsDevelopment() ? 0 : 2051;
 builder.Services.AddMetricServer(options =>
 {
-    options.Port = 2051;
+    options.Port = Convert.ToUInt16(port);
 });
 
 //Obter métricas do sistema
@@ -49,7 +50,6 @@ app.UseSwaggerUI();
 
 if (app.Environment.IsDevelopment())
 {
-    //app.UseExceptionHandler("/Error");
 }
 
 //Obter métricas das solicitações HTTP

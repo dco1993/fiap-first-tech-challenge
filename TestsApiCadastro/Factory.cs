@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Configuration;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
+using Prometheus;
 
 namespace TestsApiCadastro
 {
@@ -18,32 +19,6 @@ namespace TestsApiCadastro
 
             builder.ConfigureServices(services =>
             {
-                /*var dbContextDescriptor = services.SingleOrDefault(
-                    d => d.ServiceType ==
-                        typeof(DbContextOptions<AppDbContext>));
-
-                services.Remove(dbContextDescriptor);
-
-                var dbConnectionDescriptor = services.SingleOrDefault(
-                    d => d.ServiceType ==
-                        typeof(DbConnection));
-
-                services.Remove(dbConnectionDescriptor);*/
-
-                // Create open SqliteConnection so EF won't automatically close it.
-                /*services.AddSingleton<DbConnection>(container =>
-                {
-                    var connection = new SqliteConnection("DataSource=:memory:");
-                    connection.Open();
-
-                    return connection;
-                });
-
-                services.AddDbContext<ApplicationDbContext>((container, options) =>
-                {
-                    var connection = container.GetRequiredService<DbConnection>();
-                    options.UseSqlite(connection);
-                });*/
                 services.AddEndpointsApiExplorer();
                 services.AddDbContext<AppDbContext>(options =>
                 {

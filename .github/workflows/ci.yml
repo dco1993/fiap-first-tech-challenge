@@ -1,4 +1,4 @@
-name: .NET
+name: pipeline_ci
 
 on:
   push:
@@ -7,18 +7,61 @@ on:
     branches: [ "develop" ]
 
 jobs:
-  build:
+  build-test:
+    name: Build e testes unitários
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
+    - name: Checkout da branch
+      uses: actions/checkout@v4
+
+    - name: Instalar o .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Restore dependencies
+
+    - name: Restaurar dependências
       run: dotnet restore
-    - name: Build
+
+    - name: Build da aplicação
       run: dotnet build --no-restore
-    - name: Test
+
+    - name: Executando testes unitários
       run: dotnet test --no-build --verbosity normal
+
+    - name: Publish da aplicação
+      run: dotnet publish D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\ApiCadastro\ApiCadastro.csproj --configuration Release /p:EnvironmentName=Staging 
+
+    - name: Obter data e hora
+      id: data-hora
+      run: |
+        $currentDateTime = Get-Date -Format "yyyy-MM-dd-HH-mm"
+        echo "dataHora=$currentDateTime" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: artifact-${{ steps.data-hora.outputs.dataHora }}
+        path: D:\a\fiap-first-tech-challenge\fiap-first-tech-challenge\ApiCadastro\bin\Release\net8.0\publish\
+
+  build-push-docker-image:
+    needs: build-test
+    name: Push de imagem no Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout da branch
+      uses: actions/checkout@v4
+
+    - name: Login Docker Hub
+      uses: docker/login-action@v3.3.0
+      with:
+        username: 'dco1993'
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          
+    - name: Build e push da imagem Docker
+      uses: docker/build-push-action@v6.7.0
+      with:
+        context: .
+        tags: 'dco1993/fiap-rm356750:develop'
+        push: true
